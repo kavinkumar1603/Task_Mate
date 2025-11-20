@@ -17,7 +17,7 @@ export default function AdminLayout() {
         name="index"
         options={{
           title: 'Admin Dashboard',
-          headerShown: true,
+          headerShown: false,
         }}
       />
     </Stack>

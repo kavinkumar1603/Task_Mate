@@ -15,6 +15,7 @@ export interface Employee {
   userId: string;
   name: string;
   phone: string;
+  email?: string;
   category: string;
   department: string;
   password: string;
