@@ -43,6 +43,17 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "firebase": {
+        "apiKey": "AIzaSyA-G87g7ejoLxiHUXutPa7hy9o5pLQ1XjA",
+        "authDomain": "taskflow-395c7.firebaseapp.com",
+        "projectId": "taskflow-395c7",
+        "storageBucket": "taskflow-395c7.firebasestorage.app",
+        "messagingSenderId": "984183516752",
+        "appId": "1:984183516752:web:d63862b9c15d22a623eb55",
+        "measurementId": "G-VJP9YFJX0T"
+      }
     }
   }
 }

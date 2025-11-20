@@ -4,12 +4,16 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/client';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(10)).current;
@@ -25,10 +29,49 @@ export default function LoginScreen() {
   const passwordValid = useMemo(() => password.length >= 6, [password]);
   const canSubmit = userIdValid && passwordValid;
 
-  const onSignIn = () => {
-    // Placeholder for Firebase sign-in. Navigate to tabs after success.
-    router.replace('/(tabs)');
-  };
+const onSignIn = async () => {
+  if (!canSubmit || loading) return;
+  setError(null);
+  setLoading(true);
+
+  try {
+    const id = userId.trim();
+    const ref = doc(db, 'employees', id);
+    const snap = await getDoc(ref);
+
+    // 1. Check user exists
+    if (!snap.exists()) {
+      throw { code: 'app/user-not-found' };
+    }
+
+    const data = snap.data();
+
+    // 2. Validate password
+    if (String(data.password) !== String(password)) {
+      throw { code: 'app/wrong-password' };
+    }
+
+    // 3. Access user role
+    const role = data.role || "user";
+
+    // 4. Navigate based on role
+    if (role === "admin") {
+      router.replace('/admin');
+    } else {
+      router.replace('/(tabs)');
+    }
+
+  } catch (e: any) {
+    let message = 'Sign in failed.';
+    if (e?.code === 'app/user-not-found' || e?.code === 'app/wrong-password') {
+      message = 'Incorrect User ID or password.';
+    }
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })} style={styles.container}>
@@ -77,9 +120,13 @@ export default function LoginScreen() {
           </View>
         </View>
 
+        {error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : null}
+
         <Pressable
           onPress={onSignIn}
-          disabled={!canSubmit}
+          disabled={!canSubmit || loading}
           android_ripple={{ color: '#ffffff33' }}
           style={({ pressed }) => [
             styles.primaryButton,
@@ -87,7 +134,7 @@ export default function LoginScreen() {
             pressed && canSubmit ? styles.primaryButtonPressed : null,
           ]}
         >
-          <Text style={styles.primaryButtonText}>Sign In</Text>
+          <Text style={styles.primaryButtonText}>{loading ? 'Signing in…' : 'Sign In'}</Text>
         </Pressable>
 
         <Pressable>
@@ -212,6 +259,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 14,
     color: '#64748b',
+    fontWeight: '600',
+  },
+  errorText: {
+    color: '#dc2626',
+    marginTop: 6,
+    marginBottom: 2,
+    textAlign: 'center',
     fontWeight: '600',
   },
   blobTop: {
