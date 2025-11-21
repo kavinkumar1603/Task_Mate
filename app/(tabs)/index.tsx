@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,26 +11,91 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function UserDashboard() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+
 
   const menuItems = [
-    { id: 'dashboard', title: 'Dashboard', icon: 'home-outline' as const, route: '/dashboard' },
-    { id: 'given', title: 'Given Tasks', icon: 'clipboard-outline' as const, route: '/tasks/given' },
-    { id: 'completed', title: 'Completed Tasks', icon: 'checkmark-done-outline' as const, route: '/tasks/completed' },
-    { id: 'settings', title: 'Settings', icon: 'settings-outline' as const, route: '/settings' },
-    { id: 'logout', title: 'Logout', icon: 'log-out-outline' as const, route: '/login' },
+    { id: 'dashboard', title: 'Dashboard', icon: 'home-outline' as const },
+    { id: 'given', title: 'Given Tasks', icon: 'clipboard-outline' as const },
+    { id: 'completed', title: 'Completed Tasks', icon: 'checkmark-done-outline' as const },
+    { id: 'settings', title: 'Settings', icon: 'settings-outline' as const },
+    { id: 'logout', title: 'Logout', icon: 'log-out-outline' as const },
   ];
 
-  const handleNavigation = (route: string, id: string) => {
-    if (id === 'logout') {
-      // TODO: Clear auth/session
-      router.replace('/login');
-    } else {
-      // Placeholder navigation - uncomment when routes are ready
-      console.log(`Navigating to: ${route}`);
-      // router.push(route);
+  // Separate function for Dashboard
+  const handleOpenDashboard = () => {
+    router.push('/(tabs)/dashboard');
+  };
+
+  // Separate function for Given Tasks
+  const handleOpenGivenTasks = () => {
+    router.push('/(tabs)/given-tasks');
+  };
+
+  // Separate function for Completed Tasks
+  const handleOpenCompletedTasks = () => {
+    router.push('/(tabs)/completed-tasks');
+  };
+
+  // Separate function for Settings
+  const handleOpenSettings = () => {
+    router.push('/(tabs)/settings');
+  };
+
+  // Separate function for Logout
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Handler to call appropriate function based on button id
+  const handleButtonPress = (id: string) => {
+    switch (id) {
+      case 'dashboard':
+        handleOpenDashboard();
+        break;
+      case 'given':
+        handleOpenGivenTasks();
+        break;
+      case 'completed':
+        handleOpenCompletedTasks();
+        break;
+      case 'settings':
+        handleOpenSettings();
+        break;
+      case 'logout':
+        handleLogout();
+        break;
+      default:
+        break;
     }
   };
 
@@ -40,12 +107,20 @@ export default function UserDashboard() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hello there</Text>
-          <Text style={styles.name}>User Dashboard</Text>
+          <Text style={styles.name}>{user?.name || 'User'}</Text>
         </View>
         <View style={styles.avatar}>
           <Ionicons name="person" size={24} color="#fff" />
         </View>
       </View>
+
+      {/* Loading Indicator */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
 
       {/* Menu Items */}
       <ScrollView 
@@ -61,8 +136,9 @@ export default function UserDashboard() {
               pressed && styles.menuCardPressed,
               item.id === 'logout' && styles.logoutCard,
             ]}
-            onPress={() => handleNavigation(item.route, item.id)}
+            onPress={() => handleButtonPress(item.id)}
             android_ripple={{ color: item.id === 'logout' ? '#dc262620' : '#3b82f620' }}
+            disabled={loading}
           >
             <View style={[
               styles.iconContainer,
@@ -182,5 +258,22 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#dc2626',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
   },
 });

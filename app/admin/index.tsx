@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,27 +11,96 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', title: 'Admin Dashboard', icon: 'grid-outline' as const, route: '/admin/dashboard' },
-    { id: 'users', title: 'Manage Users', icon: 'people-outline' as const, route: '/admin/users' },
-    { id: 'tasks', title: 'View All Tasks', icon: 'list-outline' as const, route: '/admin/tasks' },
-    { id: 'create', title: 'Create Task', icon: 'add-circle-outline' as const, route: '/admin/create-task' },
-    { id: 'profile', title: 'Admin Profile / Settings', icon: 'person-circle-outline' as const, route: '/admin/profile' },
-    { id: 'logout', title: 'Logout', icon: 'log-out-outline' as const, route: '/login' },
+    { id: 'dashboard', title: 'Admin Dashboard', icon: 'grid-outline' as const },
+    { id: 'users', title: 'Manage Users', icon: 'people-outline' as const },
+    { id: 'tasks', title: 'View All Tasks', icon: 'list-outline' as const },
+    { id: 'create', title: 'Create Task', icon: 'add-circle-outline' as const },
+    { id: 'profile', title: 'Admin Profile / Settings', icon: 'person-circle-outline' as const },
+    { id: 'logout', title: 'Logout', icon: 'log-out-outline' as const },
   ];
 
-  const handleNavigation = (route: string, id: string) => {
-    if (id === 'logout') {
-      // TODO: Clear auth/session
-      router.replace('/login');
-    } else {
-      // Placeholder navigation - uncomment when routes are ready
-      console.log(`Navigating to: ${route}`);
-      // router.push(route);
+  // Separate function for Admin Dashboard
+  const handleAdminDashboard = () => {
+    router.push('/admin/dashboard');
+  };
+
+  // Separate function for Manage Users
+  const handleManageUsers = () => {
+    router.push('/admin/manage-users');
+  };
+
+  // Separate function for View All Tasks
+  const handleViewAllTasks = () => {
+    router.push('/admin/tasks');
+  };
+
+  // Separate function for Create Task
+  const handleCreateTask = () => {
+    router.push('/admin/create-task');
+  };
+
+  // Separate function for Admin Settings
+  const handleAdminSettings = () => {
+    router.push('/admin/settings');
+  };
+
+  // Separate function for Logout
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Handler to call appropriate function based on button id
+  const handleButtonPress = (id: string) => {
+    switch (id) {
+      case 'dashboard':
+        handleAdminDashboard();
+        break;
+      case 'users':
+        handleManageUsers();
+        break;
+      case 'tasks':
+        handleViewAllTasks();
+        break;
+      case 'create':
+        handleCreateTask();
+        break;
+      case 'profile':
+        handleAdminSettings();
+        break;
+      case 'logout':
+        handleLogout();
+        break;
+      default:
+        break;
     }
   };
 
@@ -41,12 +112,20 @@ export default function AdminDashboard() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Welcome back</Text>
-          <Text style={styles.role}>Administrator</Text>
+          <Text style={styles.role}>{user?.name || 'Administrator'}</Text>
         </View>
         <View style={styles.avatar}>
           <Ionicons name="person" size={24} color="#fff" />
         </View>
       </View>
+
+      {/* Loading Indicator */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
 
       {/* Menu Items */}
       <ScrollView 
@@ -62,8 +141,9 @@ export default function AdminDashboard() {
               pressed && styles.menuCardPressed,
               item.id === 'logout' && styles.logoutCard,
             ]}
-            onPress={() => handleNavigation(item.route, item.id)}
+            onPress={() => handleButtonPress(item.id)}
             android_ripple={{ color: item.id === 'logout' ? '#dc262620' : '#3b82f620' }}
+            disabled={loading}
           >
             <View style={[
               styles.iconContainer,
@@ -184,5 +264,21 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#dc2626',
   },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
 });
-``

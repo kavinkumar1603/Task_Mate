@@ -6,9 +6,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
@@ -54,12 +56,8 @@ const onSignIn = async () => {
     // 3. Access user role
     const role = data.role || "user";
 
-    // 4. Navigate based on role
-    if (role === "admin") {
-      router.replace('/admin');
-    } else {
-      router.replace('/(tabs)');
-    }
+    // 4. Sign in using auth context (handles navigation)
+    await signIn(id, role);
 
   } catch (e: any) {
     let message = 'Sign in failed.';

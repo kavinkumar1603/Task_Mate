@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kavinkumar_c.taskflow"
     },
     "web": {
       "output": "static",
@@ -53,6 +54,10 @@
         "messagingSenderId": "984183516752",
         "appId": "1:984183516752:web:d63862b9c15d22a623eb55",
         "measurementId": "G-VJP9YFJX0T"
+      },
+      "router": {},
+      "eas": {
+        "projectId": "d23f26eb-6333-40e8-8c83-1cac7d14ec0f"
       }
     }
   }
