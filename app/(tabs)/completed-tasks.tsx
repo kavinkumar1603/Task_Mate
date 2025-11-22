@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Task } from '@/types';
 
@@ -34,21 +33,11 @@ export default function CompletedTasksPage() {
         return;
       }
 
-      const tasksRef = collection(db, 'tasks');
-      const q = query(
-        tasksRef,
-        where('assignedTo', '==', user.userId),
-        where('status', '==', 'completed')
-      );
-
-      const snapshot = await getDocs(q);
-      const tasksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Task[];
+      // Load tasks from API
+      const tasksData = await api.get(`/tasks?assignedTo=${user.userId}&status=completed`);
 
       // Sort by completion date (newest first)
-      tasksData.sort((a, b) => {
+      tasksData.sort((a: Task, b: Task) => {
         if (!a.completedAt) return 1;
         if (!b.completedAt) return -1;
         return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
@@ -131,7 +120,7 @@ export default function CompletedTasksPage() {
             Completed in{' '}
             {Math.ceil(
               (new Date(item.completedAt).getTime() - new Date(item.createdAt).getTime()) /
-                (1000 * 60 * 60 * 24)
+              (1000 * 60 * 60 * 24)
             )}{' '}
             days
           </Text>

@@ -14,8 +14,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { Employee } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { notifyAssignedUser } from '@/utils/notifications';
@@ -43,16 +42,11 @@ export default function CreateTaskPage() {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      const employeesRef = collection(db, 'employees');
-      const q = query(employeesRef, where('role', '==', 'user'));
-      const snapshot = await getDocs(q);
-      
-      const usersData = snapshot.docs.map(doc => ({
-        userId: doc.id,
-        ...doc.data(),
-      })) as Employee[];
-
-      setUsers(usersData);
+      const usersData = await api.get('/users');
+      // Filter only users with role 'user' if needed, or backend can do it.
+      // Assuming backend returns all users, we filter here as per original logic
+      const filteredUsers = (usersData as Employee[]).filter(u => u.role === 'user');
+      setUsers(filteredUsers);
     } catch (error) {
       console.error('Error loading users:', error);
       Alert.alert('Error', 'Failed to load users');
@@ -117,14 +111,14 @@ export default function CreateTaskPage() {
         createdBy: 'admin', // Should be actual admin ID from auth
       };
 
-      const taskRef = await addDoc(collection(db, 'tasks'), task);
+      const response = await api.post('/tasks', task);
 
       // Send push notification to assigned user
       try {
         await notifyAssignedUser(
           taskData.assignedTo,
           taskData.title,
-          taskRef.id
+          response.id
         );
         console.log('Push notification sent successfully');
       } catch (notifError) {
@@ -178,7 +172,7 @@ export default function CreateTaskPage() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         bounces={false}>
-        
+
         {/* Task Title */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Task Title *</Text>

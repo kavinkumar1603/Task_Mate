@@ -2,9 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useSegments } from 'expo-router';
-import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
-import { db } from '@/firebase/client';
-import * as Notifications from 'expo-notifications';
+import { api } from '@/services/api';
 import * as Device from 'expo-device';
 
 interface User {
@@ -32,38 +30,7 @@ export function useAuth() {
   return context;
 }
 
-async function registerPushToken(uid: string) {
-  if (!Device.isDevice) {
-    console.log('Must use a physical device for push notifications');
-    return;
-  }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.log('Permission not granted');
-    return;
-  }
-
-  const tokenData = await Notifications.getExpoPushTokenAsync();
-  const token = tokenData.data;
-
-  await setDoc(
-    doc(db, 'employees', uid),
-    { expoPushTokens: arrayUnion(token) },
-    { merge: true }
-  );
-
-  console.log('Push token saved:', token);
-
-  return token;
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -117,26 +84,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      // Verify user exists in Firestore
-      const userDoc = await getDoc(doc(db, 'employees', userId));
-      
-      if (!userDoc.exists()) {
+      // Verify user exists via API
+      try {
+        const userData = await api.get(`/users/${userId}`);
+
+        const currentUser: User = {
+          userId,
+          name: userName || userData.name || 'User',
+          email: userData.email || '',
+          role: userRole as 'admin' | 'user',
+        };
+
+        setUser(currentUser);
+        setLoading(false);
+        return currentUser;
+      } catch (error) {
+        // If API fails (e.g. 404), sign out
+        console.error('User verification failed:', error);
         await signOut();
         setLoading(false);
         return null;
       }
-
-      const userData = userDoc.data();
-      const currentUser: User = {
-        userId,
-        name: userName || userData.name || 'User',
-        email: userData.email || '',
-        role: userRole as 'admin' | 'user',
-      };
-
-      setUser(currentUser);
-      setLoading(false);
-      return currentUser;
     } catch (error) {
       console.error('Error checking session:', error);
       setUser(null);
@@ -147,15 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (userId: string, role: string) => {
     try {
-      // Get user data from Firestore
-      const userDoc = await getDoc(doc(db, 'employees', userId));
-      
-      if (!userDoc.exists()) {
-        throw new Error('User not found');
-      }
+      // Get user data from API
+      const userData = await api.get(`/users/${userId}`);
 
-      const userData = userDoc.data();
-      
       // Store in AsyncStorage
       await AsyncStorage.setItem('userId', userId);
       await AsyncStorage.setItem('userRole', role);
@@ -170,10 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(currentUser);
 
-      // Register push notification token
-      registerPushToken(userId).catch(err => 
-        console.error('Failed to register push token:', err)
-      );
+
 
       // Navigation will be handled by useEffect
     } catch (error) {

@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Stats {
@@ -49,29 +48,10 @@ export default function UserDashboardPage() {
         return;
       }
 
-      // Load tasks for this user
-      const tasksRef = collection(db, 'tasks');
-      const q = query(tasksRef, where('assignedTo', '==', user.userId));
-      const snapshot = await getDocs(q);
+      // Load stats from API
+      const statsData = await api.get(`/dashboard/stats?userId=${user.userId}`);
 
-      const tasks = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as any[];
-
-      const totalTasks = tasks.length;
-      const pendingTasks = tasks.filter(t => t.status === 'pending').length;
-      const inProgressTasks = tasks.filter(t => t.status === 'in-progress').length;
-      const completedTasks = tasks.filter(t => t.status === 'completed').length;
-      const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-      setStats({
-        totalTasks,
-        pendingTasks,
-        inProgressTasks,
-        completedTasks,
-        completionRate,
-      });
+      setStats(statsData);
     } catch (error) {
       console.error('Error loading dashboard:', error);
       Alert.alert('Error', 'Failed to load dashboard data');
@@ -123,7 +103,7 @@ export default function UserDashboardPage() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        
+
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.profileAvatar}>
@@ -191,7 +171,7 @@ export default function UserDashboardPage() {
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
+
           <Pressable
             style={styles.actionButton}
             onPress={() => router.push('/(tabs)/given-tasks' as any)}>

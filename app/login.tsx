@@ -4,8 +4,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
@@ -31,44 +30,39 @@ export default function LoginScreen() {
   const passwordValid = useMemo(() => password.length >= 6, [password]);
   const canSubmit = userIdValid && passwordValid;
 
-const onSignIn = async () => {
-  if (!canSubmit || loading) return;
-  setError(null);
-  setLoading(true);
+  const onSignIn = async () => {
+    if (!canSubmit || loading) return;
+    setError(null);
+    setLoading(true);
 
-  try {
-    const id = userId.trim();
-    const ref = doc(db, 'employees', id);
-    const snap = await getDoc(ref);
+    try {
+      const id = userId.trim();
 
-    // 1. Check user exists
-    if (!snap.exists()) {
-      throw { code: 'app/user-not-found' };
+      // Call login API
+      const response = await api.post('/auth/login', {
+        userId: id,
+        password: password
+      });
+
+      // Access user role from response
+      const role = response.role || "user";
+
+      // Sign in using auth context (handles navigation)
+      await signIn(id, role);
+
+    } catch (e: any) {
+      console.error("Login error:", e);
+      let message = 'Sign in failed.';
+      // Check for specific error codes if the API returns them in a standard way
+      // or just generic failure
+      if (e.message?.includes('404') || e.message?.includes('401')) {
+        message = 'Incorrect User ID or password.';
+      }
+      setError(message);
+    } finally {
+      setLoading(false);
     }
-
-    const data = snap.data();
-
-    // 2. Validate password
-    if (String(data.password) !== String(password)) {
-      throw { code: 'app/wrong-password' };
-    }
-
-    // 3. Access user role
-    const role = data.role || "user";
-
-    // 4. Sign in using auth context (handles navigation)
-    await signIn(id, role);
-
-  } catch (e: any) {
-    let message = 'Sign in failed.';
-    if (e?.code === 'app/user-not-found' || e?.code === 'app/wrong-password') {
-      message = 'Incorrect User ID or password.';
-    }
-    setError(message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   return (
@@ -253,7 +247,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   linkMuted: {
-    
+
     textAlign: 'center',
     marginTop: 14,
     color: '#64748b',

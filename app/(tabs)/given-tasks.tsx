@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Task } from '@/types';
 
@@ -35,21 +34,11 @@ export default function GivenTasksPage() {
         return;
       }
 
-      const tasksRef = collection(db, 'tasks');
-      const q = query(
-        tasksRef,
-        where('assignedTo', '==', user.userId),
-        where('status', 'in', ['pending', 'in-progress'])
-      );
-
-      const snapshot = await getDocs(q);
-      const tasksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Task[];
+      // Load tasks from API
+      const tasksData = await api.get(`/tasks?assignedTo=${user.userId}&status=pending,in-progress`);
 
       // Sort by deadline
-      tasksData.sort((a, b) => {
+      tasksData.sort((a: Task, b: Task) => {
         if (!a.deadline) return 1;
         if (!b.deadline) return -1;
         return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
@@ -68,7 +57,7 @@ export default function GivenTasksPage() {
     try {
       setProcessingTaskId(taskId);
 
-      await updateDoc(doc(db, 'tasks', taskId), {
+      await api.put(`/tasks/${taskId}`, {
         status: 'in-progress',
         startedAt: new Date().toISOString(),
       });
@@ -103,7 +92,7 @@ export default function GivenTasksPage() {
             try {
               setProcessingTaskId(taskId);
 
-              await updateDoc(doc(db, 'tasks', taskId), {
+              await api.put(`/tasks/${taskId}`, {
                 status: 'completed',
                 completedAt: new Date().toISOString(),
               });

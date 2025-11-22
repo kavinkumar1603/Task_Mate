@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminDashboardPage() {
@@ -35,28 +34,14 @@ export default function AdminDashboardPage() {
     try {
       setLoading(true);
 
-      // Fetch total users
-      const usersRef = collection(db, 'employees');
-      const usersQuery = query(usersRef, where('role', '==', 'user'));
-      const usersSnapshot = await getDocs(usersQuery);
-      const totalUsers = usersSnapshot.size;
-
-      // Fetch all tasks
-      const tasksRef = collection(db, 'tasks');
-      const tasksSnapshot = await getDocs(tasksRef);
-      const allTasks = tasksSnapshot.docs.map(doc => doc.data());
-
-      const totalTasks = allTasks.length;
-      const pendingTasks = allTasks.filter(t => t.status === 'pending').length;
-      const completedTasks = allTasks.filter(t => t.status === 'completed').length;
-      const inProgressTasks = allTasks.filter(t => t.status === 'in-progress').length;
+      const statsData = await api.get('/admin/stats');
 
       setStats({
-        totalUsers,
-        totalTasks,
-        pendingTasks,
-        completedTasks,
-        inProgressTasks,
+        totalUsers: statsData.totalUsers || 0,
+        totalTasks: statsData.totalTasks || 0,
+        pendingTasks: statsData.pendingTasks || 0,
+        completedTasks: statsData.completedTasks || 0,
+        inProgressTasks: statsData.inProgressTasks || 0,
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -165,7 +150,7 @@ export default function AdminDashboardPage() {
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
+
           <Pressable
             style={styles.actionButton}
             onPress={() => router.push('/admin/manage-users')}>

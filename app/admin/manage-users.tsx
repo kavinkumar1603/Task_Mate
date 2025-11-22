@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, updateDoc, doc, deleteDoc, query, where } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { Employee } from '@/types';
 
 export default function ManageUsersPage() {
@@ -28,15 +27,8 @@ export default function ManageUsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const employeesRef = collection(db, 'employees');
-      const snapshot = await getDocs(employeesRef);
-      
-      const usersData = snapshot.docs.map(doc => ({
-        userId: doc.id,
-        ...doc.data(),
-      })) as Employee[];
-
-      setUsers(usersData);
+      const usersData = await api.get('/users');
+      setUsers(usersData as Employee[]);
     } catch (error) {
       console.error('Error loading users:', error);
       Alert.alert('Error', 'Failed to load users');
@@ -47,7 +39,7 @@ export default function ManageUsersPage() {
 
   const handleToggleRole = async (user: Employee) => {
     const newRole = user.role === 'admin' ? 'user' : 'admin';
-    
+
     Alert.alert(
       'Change Role',
       `Change ${user.name}'s role to ${newRole}?`,
@@ -58,9 +50,8 @@ export default function ManageUsersPage() {
           onPress: async () => {
             try {
               setProcessingUserId(user.userId);
-              const userRef = doc(db, 'employees', user.userId);
-              await updateDoc(userRef, { role: newRole });
-              
+              await api.put(`/users/${user.userId}`, { role: newRole });
+
               Alert.alert('Success', `${user.name} is now ${newRole}`);
               await loadUsers();
             } catch (error) {
@@ -87,20 +78,9 @@ export default function ManageUsersPage() {
           onPress: async () => {
             try {
               setProcessingUserId(user.userId);
-              
-              // Delete user's tasks first
-              const tasksRef = collection(db, 'tasks');
-              const tasksQuery = query(tasksRef, where('assignedTo', '==', user.userId));
-              const tasksSnapshot = await getDocs(tasksQuery);
-              
-              const deletePromises = tasksSnapshot.docs.map(taskDoc =>
-                deleteDoc(doc(db, 'tasks', taskDoc.id))
-              );
-              await Promise.all(deletePromises);
 
-              // Delete user
-              await deleteDoc(doc(db, 'employees', user.userId));
-              
+              await api.delete(`/users/${user.userId}`);
+
               Alert.alert('Success', 'User deleted successfully');
               await loadUsers();
             } catch (error) {

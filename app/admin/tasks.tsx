@@ -13,8 +13,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { api } from '@/services/api';
 import { Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -41,15 +40,8 @@ export default function ViewAllTasksPage() {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const tasksRef = collection(db, 'tasks');
-      const snapshot = await getDocs(tasksRef);
-      
-      const tasksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Task[];
-
-      setTasks(tasksData);
+      const tasksData = await api.get('/tasks');
+      setTasks(tasksData as Task[]);
     } catch (error) {
       console.error('Error loading tasks:', error);
       Alert.alert('Error', 'Failed to load tasks');
@@ -89,7 +81,7 @@ export default function ViewAllTasksPage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteDoc(doc(db, 'tasks', task.id));
+              await api.delete(`/tasks/${task.id}`);
               Alert.alert('Success', 'Task deleted successfully');
               await loadTasks();
             } catch (error) {
@@ -113,8 +105,7 @@ export default function ViewAllTasksPage() {
     }
 
     try {
-      const taskRef = doc(db, 'tasks', selectedTask.id);
-      await updateDoc(taskRef, {
+      await api.put(`/tasks/${selectedTask.id}`, {
         title: editTitle.trim(),
         description: editDescription.trim(),
       });
@@ -130,14 +121,13 @@ export default function ViewAllTasksPage() {
 
   const handleUpdateStatus = async (task: Task, newStatus: Task['status']) => {
     try {
-      const taskRef = doc(db, 'tasks', task.id);
       const updateData: any = { status: newStatus };
-      
+
       if (newStatus === 'completed') {
         updateData.completedAt = new Date().toISOString();
       }
 
-      await updateDoc(taskRef, updateData);
+      await api.put(`/tasks/${task.id}`, updateData);
       Alert.alert('Success', `Task marked as ${newStatus}`);
       await loadTasks();
     } catch (error) {
@@ -201,7 +191,7 @@ export default function ViewAllTasksPage() {
               <Text style={styles.completeButtonText}>Complete</Text>
             </Pressable>
           )}
-          
+
           <Pressable
             style={[styles.statusButton, styles.editButton]}
             onPress={() => handleEditTask(item)}>
