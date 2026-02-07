@@ -1,50 +1,131 @@
-# Welcome to your Expo app 👋
+# TaskFlow - Task Management Application
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A full-stack task management application with React Native (Expo) frontend and Firebase backend.
 
-## Get started
+## Project Structure
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+Task_flow/
+├── frontend/          # React Native/Expo mobile app
+│   ├── app/          # App screens and navigation
+│   ├── assets/       # Images and static assets
+│   ├── constants/    # App constants and theme
+│   ├── contexts/     # React contexts
+│   ├── firebase/     # Firebase client configuration
+│   ├── services/     # API services
+│   ├── types/        # TypeScript type definitions
+│   └── utils/        # Utility functions
+│
+└── backend/          # Firebase Functions backend
+    ├── functions/    # Cloud Functions code
+    │   └── src/     # TypeScript source files
+    └── firebase.json # Firebase configuration
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting Started
 
-## Learn more
+### Prerequisites
 
-To learn more about developing your project with Expo, look at the following resources:
+- Node.js (v18 or higher)
+- npm or yarn
+- Expo CLI
+- Firebase CLI (`npm install -g firebase-tools`)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Frontend Setup
 
-## Join the community
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
 
-Join our community of developers creating universal apps.
+2. Install dependencies:
+```bash
+npm install
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+3. Start the Expo development server:
+```bash
+npm start
+```
+
+4. Run on your device:
+   - Scan the QR code with Expo Go app (iOS/Android)
+   - Press `a` for Android emulator
+   - Press `i` for iOS simulator
+
+### Backend Setup
+
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
+
+2. Install dependencies:
+```bash
+cd functions
+npm install
+cd ..
+```
+
+3. Start Firebase emulators (for local development):
+```bash
+npm run serve
+```
+
+The backend will be available at http://localhost:5001
+
+## Development
+
+### Running Both Frontend and Backend
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+npm run serve
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm start
+```
+
+## Deployment
+
+### Backend Deployment
+
+```bash
+cd backend
+npm run deploy
+```
+
+### Frontend Deployment
+
+Follow Expo's deployment guide for publishing to app stores or using EAS Build.
+
+## Features
+
+- User authentication
+- Task creation and management
+- Admin dashboard
+- Push notifications
+- Real-time updates with Firestore
+
+## Tech Stack
+
+### Frontend
+- React Native
+- Expo
+- TypeScript
+- Expo Router
+- Firebase Client SDK
+
+### Backend
+- Firebase Functions
+- Firebase Firestore
+- TypeScript
+- Node.js
+
+## License
+
+MIT

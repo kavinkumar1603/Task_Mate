@@ -1,0 +1,17 @@
+{
+  "name": "taskflow-backend",
+  "version": "1.0.0",
+  "description": "Backend API for TaskFlow application using Firebase Functions",
+  "main": "functions/lib/index.js",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run serve",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "build": "cd functions && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
